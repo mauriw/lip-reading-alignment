@@ -21,7 +21,6 @@ class LipReadingData(Dataset):
         return image, label
 
 if __name__ == '__main__':
-    print("hello!")
     training_data = LipReadingData('data/labels.csv', 'data/images')
     train_dataloader = DataLoader(training_data, batch_size=1, shuffle=False)    
     img, label = next(iter(train_dataloader))
