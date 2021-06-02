@@ -1,6 +1,5 @@
 import torch 
 import pytorch_lightning as pl
-import constants
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -11,8 +10,6 @@ class LipReadingData(pl.LightningDataModule):
     def __init__(self, batch_size):
         super().__init__()
         self.x, self.y = utils.load_data('pNttjJUtkA4')
-        # self.x = np.random.randn(100, constants.SEQ_LEN, constants.EMBED_LEN) # 100 datapoints of 32 consecutive 512-d embeddings
-        # self.y = np.random.randint(2, size=(100, constants.SEQ_LEN)) # 100 datapoints of 32 consecutive labels
         self.batch_size = batch_size
         self.pos_weight = self.get_pos_weight()
 

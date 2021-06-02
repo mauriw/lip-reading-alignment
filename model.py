@@ -1,6 +1,8 @@
 import torch 
 import torch.nn as nn
+import torch.nn.functional as F
 import pytorch_lightning as pl
+import torchmetrics
 
 import constants
 
@@ -11,7 +13,13 @@ class LipReader(pl.LightningModule):
         self.gru = nn.GRU(input_size=512, hidden_size=hidden_size, num_layers=num_layers, 
             batch_first=True, bidirectional=bidirectional)
         self.linear = nn.Linear(in_features=num_directions*hidden_size, out_features=1)
-        self.pos_weight = pos_weight
+        self.loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
+        # Metrics
+        self.train_acc = torchmetrics.Accuracy()
+        self.valid_acc = torchmetrics.Accuracy()
+        self.test_acc = torchmetrics.Accuracy()
+        self.test_f1 = torchmetrics.F1()
 
         # For debugging
         self.num_directions = num_directions
@@ -42,10 +50,30 @@ class LipReader(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
-        loss_fn = nn.BCEWithLogitsLoss(pos_weight=self.pos_weight)
-        loss = loss_fn(y_hat, y)
+        preds = self(x)
+        loss = self.loss(preds, y)
+        self.log('loss', loss, on_epoch=True, prog_bar=True)
+        self.train_acc(torch.sigmoid(preds), y.int())
+        self.log('train_acc', self.train_acc, on_step=True, on_epoch=False)
         return loss
     
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        preds = self(x)
+        loss = self.loss(preds, y)
+        self.log('val_loss', loss, on_epoch=True)
+        self.valid_acc(torch.sigmoid(preds), y.int())
+        self.log('val_acc', self.valid_acc, on_step=False, on_epoch=True)
+        
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        preds = self(x)
+        loss = self.loss(preds, y)
+        self.log('test_loss', loss, on_step=False, on_epoch=True)
+        self.test_acc(torch.sigmoid(preds), y.int())
+        self.test_f1(torch.sigmoid(preds), y.int())
+        self.log('test_acc', self.test_acc, on_step=False, on_epoch=True)
+        self.log('test_f1', self.test_f1, on_step=False, on_epoch=True)
+       
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters())
