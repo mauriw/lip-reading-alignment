@@ -5,6 +5,8 @@ __pycache__/
 data/
 # C extensions
 *.so
+.DS_STORE
+/lightning_logs
 
 # Distribution / packaging
 .Python
