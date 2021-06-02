@@ -18,7 +18,7 @@ class LipReadingData(pl.LightningDataModule):
         labels = self.y.ravel()
         num_positive = labels.sum()
         num_negative = len(labels) - num_positive
-        pos_weight = num_positive / num_negative
+        pos_weight = num_negative / num_positive  
         return torch.tensor([pos_weight])
 
     def setup(self, stage):
