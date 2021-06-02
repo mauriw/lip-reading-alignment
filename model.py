@@ -7,18 +7,18 @@ import torchmetrics
 import constants
 
 class LipReader(pl.LightningModule):
-    def __init__(self, hidden_size, num_layers, dropout_rate, bidirectional, pos_weight):
+    def __init__(self, hidden_size, num_layers, dropout, bidirectional, pos_weight):
         super().__init__()
-        self.save_hyperparameters() #make sure it works as expected
+        self.save_hyperparameters()
         num_directions = 2 if bidirectional else 1
-        self.gru = nn.GRU(input_size=512, hidden_size=hidden_size, num_layers=num_layers, 
+        self.gru = nn.GRU(input_size=512, hidden_size=hidden_size, num_layers=num_layers, dropout=dropout,
             batch_first=True, bidirectional=bidirectional)
         self.linear = nn.Linear(in_features=num_directions*hidden_size, out_features=1)
         self.loss = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([pos_weight]))
 
         # Metrics
-        self.train_acc = torchmetrics.Accuracy()
-        self.valid_acc = torchmetrics.Accuracy()
+        self.train_f1 = torchmetrics.F1()
+        self.valid_f1 = torchmetrics.F1()
         self.test_acc = torchmetrics.Accuracy()
         self.test_f1 = torchmetrics.F1()
 
@@ -54,8 +54,8 @@ class LipReader(pl.LightningModule):
         preds = self(x)
         loss = self.loss(preds, y)
         self.log('train_loss', loss, on_epoch=True)
-        self.train_acc(torch.sigmoid(preds), y.int())
-        self.log('train_acc', self.train_acc, on_step=True, on_epoch=False)
+        self.train_f1(torch.sigmoid(preds), y.int())
+        self.log('train_f1', self.train_f1, on_step=True, on_epoch=False)
         return loss
     
     def validation_step(self, batch, batch_idx):
@@ -63,9 +63,9 @@ class LipReader(pl.LightningModule):
         preds = self(x)
         loss = self.loss(preds, y)
         self.log('val_loss', loss, on_epoch=True)
-        self.valid_acc(torch.sigmoid(preds), y.int())
-        self.log('val_acc', self.valid_acc, on_step=True, prog_bar=True, on_epoch=True)
-        self.log('hp_metric', self.valid_acc)
+        self.valid_f1(torch.sigmoid(preds), y.int())
+        self.log('val_f1', self.valid_f1, on_step=True, prog_bar=True, on_epoch=True)
+        self.log('hp_metric', self.valid_f1)
         
     def test_step(self, batch, batch_idx):
         x, y = batch
