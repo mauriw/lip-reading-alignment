@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
-import torchmetrics
+from torchmetrics import MetricCollection, F1, Accuracy, Precision, Recall
 
 import constants
 
@@ -17,10 +17,11 @@ class LipReader(pl.LightningModule):
         self.loss = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([pos_weight]))
 
         # Metrics
-        self.train_f1 = torchmetrics.F1()
-        self.valid_f1 = torchmetrics.F1()
-        self.test_acc = torchmetrics.Accuracy()
-        self.test_f1 = torchmetrics.F1()
+        metrics = MetricCollection([F1(), Accuracy(), Precision(), Recall()])
+        self.train_metrics = metrics.clone(prefix='train_')
+        self.val_metrics = metrics.clone(prefix='val_')
+        self.val_hp_metric = F1() # key metric for tuning hyperparameters 
+        self.test_metrics = metrics.clone(prefix='test_')
 
         # For debugging
         self.num_directions = num_directions
@@ -54,8 +55,7 @@ class LipReader(pl.LightningModule):
         preds = self(x)
         loss = self.loss(preds, y)
         self.log('train_loss', loss, on_epoch=True)
-        self.train_f1(torch.sigmoid(preds), y.int())
-        self.log('train_f1', self.train_f1, on_step=True, on_epoch=False)
+        self.log_dict(self.train_metrics(torch.sigmoid(preds), y.int()))
         return loss
     
     def validation_step(self, batch, batch_idx):
@@ -63,19 +63,17 @@ class LipReader(pl.LightningModule):
         preds = self(x)
         loss = self.loss(preds, y)
         self.log('val_loss', loss, on_epoch=True)
-        self.valid_f1(torch.sigmoid(preds), y.int())
-        self.log('val_f1', self.valid_f1, on_step=True, prog_bar=True, on_epoch=True)
-        self.log('hp_metric', self.valid_f1)
+        self.log_dict(self.val_metrics(torch.sigmoid(preds), y.int()), \
+            on_step=True, prog_bar=True, on_epoch=True)
+        self.val_hp_metric(torch.sigmoid(preds), y.int())
+        self.log('hp_metric', self.val_hp_metric)
         
     def test_step(self, batch, batch_idx):
         x, y = batch
         preds = self(x)
         loss = self.loss(preds, y)
         self.log('test_loss', loss, on_step=False, on_epoch=True)
-        self.test_acc(torch.sigmoid(preds), y.int())
-        self.test_f1(torch.sigmoid(preds), y.int())
-        self.log('test_acc', self.test_acc, on_step=False, on_epoch=True)
-        self.log('test_f1', self.test_f1, on_step=False, on_epoch=True)
-       
+        self.log_dict(self.test_metrics(torch.sigmoid(preds), y.int()), on_step=False, on_epoch=True)
+        
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters())
