@@ -2,16 +2,28 @@ import numpy as np
 
 import constants
 
-def load_data(vid):
+def load_single_video(vid):
     x_path = constants.DATA_PATH / (vid + constants.EMBED_SUFFIX)
     y_path = constants.DATA_PATH / (vid + constants.LABELS_SUFFIX)
     x = np.load(x_path)
     y = np.load(y_path)
     return x, y
 
-def load_all_data():
-    vids = ['5l4cA8zSreQ','pNttjJUtkA4', 'GjYt5uQPu8o', 'WFImhWa5oUw', 'urKhVssiygA', 'CLWRclarri0', 'j7RsRnYlz7I']
-    embeddings, labels = zip(*[load_data(vid) for vid in vids])
+def load_multiple_videos(custom_list=None):
+    vids = constants.VIDS if not custom_list else custom_list
+    embeddings, labels = zip(*[load_single_video(vid) for vid in vids])
     embeddings = np.concatenate(embeddings, axis=0)
     labels = np.concatenate(labels, axis=0)
     return embeddings, labels
+
+def load_all_excluding(vid):
+    idx = constants.VIDS.index(vid)
+    vids = constants.VIDS[:idx] + constants.VIDS[idx+1:]
+    x, y = load_multiple_videos(vids)
+    x_test, y_test = load_single_video(vid)
+    return x, x_test, y, y_test
+
+if __name__ == '__main__':
+    x, x_test, y, y_test = load_all_excluding('j7RsRnYlz7I')
+    print(x.shape, x_test.shape, y.shape, y_test.shape)
+  

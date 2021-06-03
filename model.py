@@ -7,7 +7,7 @@ from torchmetrics import MetricCollection, F1, Accuracy, Precision, Recall
 import constants
 
 class LipReader(pl.LightningModule):
-    def __init__(self, hidden_size, num_layers, dropout, bidirectional, pos_weight):
+    def __init__(self, hidden_size, num_layers, dropout, bidirectional, pos_weight, data_setup):
         super().__init__()
         self.save_hyperparameters()
         num_directions = 2 if bidirectional else 1
