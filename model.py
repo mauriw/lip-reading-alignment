@@ -27,6 +27,7 @@ class LipReader(pl.LightningModule):
         self.num_directions = num_directions
         self.hidden_size = hidden_size
         self.num_layers = num_layers
+        self.test_probs = None
 
     def forward(self, x):
         """
@@ -72,6 +73,7 @@ class LipReader(pl.LightningModule):
         x, y = batch
         preds = self(x)
         loss = self.loss(preds, y)
+        self.test_probs = torch.sigmoid(preds)
         self.log('test_loss', loss, on_step=False, on_epoch=True)
         self.log_dict(self.test_metrics(torch.sigmoid(preds), y.int()), on_step=False, on_epoch=True)
         

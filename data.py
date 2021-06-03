@@ -35,7 +35,6 @@ class LipReadingData(pl.LightningDataModule):
         self.train = TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(y_train).float())
         self.val = TensorDataset(torch.from_numpy(X_val).float(), torch.from_numpy(y_val).float())
         self.test = TensorDataset(torch.from_numpy(X_test).float(), torch.from_numpy(y_test).float())
-        print(self.train.tensors)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.batch_size)

@@ -22,8 +22,3 @@ def load_all_excluding(vid):
     x, y = load_multiple_videos(vids)
     x_test, y_test = load_single_video(vid)
     return x, x_test, y, y_test
-
-if __name__ == '__main__':
-    x, x_test, y, y_test = load_all_excluding('j7RsRnYlz7I')
-    print(x.shape, x_test.shape, y.shape, y_test.shape)
-  
